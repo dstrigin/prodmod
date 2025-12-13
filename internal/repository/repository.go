@@ -8,8 +8,8 @@ import (
 )
 
 type Repository struct {
-	Facts []fact.Fact
-	Rules []rule.Rule
+	Facts map[int]*fact.Fact
+	Rules map[int]*rule.Rule
 }
 
 func NewRepository(factsFileName, rulesFileName string) (*Repository, error) {
@@ -19,7 +19,7 @@ func NewRepository(factsFileName, rulesFileName string) (*Repository, error) {
 	}
 	defer factsFile.Close()
 
-	facts := make([]fact.Fact, 0)
+	facts := make(map[int]*fact.Fact)
 	scannerFacts := bufio.NewScanner(factsFile)
 	for scannerFacts.Scan() {
 		line := scannerFacts.Text()
@@ -27,7 +27,7 @@ func NewRepository(factsFileName, rulesFileName string) (*Repository, error) {
 		if err != nil {
 			return nil, err
 		}
-		facts = append(facts, *fact)
+		facts[fact.Id] = fact
 	}
 
 	rulesFile, err := os.Open(rulesFileName)
@@ -36,7 +36,7 @@ func NewRepository(factsFileName, rulesFileName string) (*Repository, error) {
 	}
 	defer rulesFile.Close()
 
-	rules := make([]rule.Rule, 0)
+	rules := make(map[int]*rule.Rule)
 	scannerRules := bufio.NewScanner(rulesFile)
 	for scannerRules.Scan() {
 		line := scannerRules.Text()
@@ -44,7 +44,7 @@ func NewRepository(factsFileName, rulesFileName string) (*Repository, error) {
 		if err != nil {
 			return nil, err
 		}
-		rules = append(rules, *rule)
+		rules[rule.Id] = rule
 	}
 
 	return &Repository{

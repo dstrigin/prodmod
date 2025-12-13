@@ -1,7 +1,7 @@
 package fact
 
 import (
-	"prodmod/pkg/parser"
+	"prodmod/pkg/id"
 	"strconv"
 	"strings"
 )
@@ -16,7 +16,7 @@ type Fact struct {
 
 func FromString(factString string) (*Fact, error) {
 	tokens := strings.Split(factString, ";")
-	id, err := parser.ParseId(tokens[0])
+	id, err := id.ParseId(tokens[0])
 	if err != nil {
 		return nil, err
 	}

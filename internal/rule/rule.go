@@ -2,7 +2,7 @@ package rule
 
 import (
 	"prodmod/internal/fact"
-	"prodmod/pkg/parser"
+	idpkg "prodmod/pkg/id"
 	"strconv"
 	"strings"
 )
@@ -17,7 +17,7 @@ type Rule struct {
 
 func FromString(ruleString string) (*Rule, error) {
 	tokens := strings.Split(ruleString, ";")
-	id, err := parser.ParseId(tokens[0])
+	id, err := idpkg.ParseId(tokens[0])
 	if err != nil {
 		return nil, err
 	}
@@ -25,14 +25,14 @@ func FromString(ruleString string) (*Rule, error) {
 	from := make([]fact.ID, 0)
 	fromRules := strings.Split(tokens[1], ",")
 	for _, fromRule := range fromRules {
-		ruleId, err := parser.ParseId(fromRule)
+		ruleId, err := idpkg.ParseId(fromRule)
 		if err != nil {
 			return nil, err
 		}
 		from = append(from, ruleId)
 	}
 
-	resId, err := parser.ParseId(tokens[2])
+	resId, err := idpkg.ParseId(tokens[2])
 	if err != nil {
 		return nil, err
 	}
