@@ -24,19 +24,14 @@ func main() {
 	}
 	fmt.Println("axioms: ", len(axioms))
 
-	target, err := idpkg.ReadIds("data/target.txt")
+	targets, err := idpkg.ReadIds("data/target.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("target: ", len(target))
+	fmt.Println("target: ", len(targets))
 
-	m := model.NewProductionModel(axioms, target[0], repo)
+	m := model.NewProductionModel(axioms, targets, repo)
 
-	success, err := m.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("production: ", success)
-
-	m.Print()
+	m.Run()
+	m.GetAdvice()
 }

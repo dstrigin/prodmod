@@ -4,68 +4,95 @@ import (
 	"fmt"
 	"prodmod/internal/fact"
 	"prodmod/internal/repository"
+	"prodmod/internal/rule"
 )
 
 type ProductionModel struct {
 	Memory     map[fact.ID]bool
-	Target     fact.ID
+	Targets    map[fact.ID]bool
 	Repository *repository.Repository
+	Derivation map[fact.ID]*rule.Rule
 }
 
-func NewProductionModel(axioms []fact.ID, target fact.ID, repository *repository.Repository) *ProductionModel {
+func NewProductionModel(axioms []fact.ID, targets []fact.ID, repository *repository.Repository) *ProductionModel {
 	memory := make(map[fact.ID]bool)
 	for _, axiom := range axioms {
 		memory[axiom] = true
 	}
 
+	targetMap := make(map[fact.ID]bool)
+	for _, target := range targets {
+		targetMap[target] = true
+	}
+
 	return &ProductionModel{
 		Memory:     memory,
-		Target:     target,
+		Targets:    targetMap,
 		Repository: repository,
+		Derivation: make(map[fact.ID]*rule.Rule),
 	}
 }
 
-func (p *ProductionModel) ProcessRule(from []fact.ID, to fact.ID) bool {
-	if _, exists := p.Memory[to]; exists {
+func (p *ProductionModel) ProcessRule(r *rule.Rule) bool {
+	if _, exists := p.Memory[r.Result]; exists {
 		return false
 	}
 
-	for _, factID := range from {
+	for _, factID := range r.From {
 		if _, exists := p.Memory[factID]; !exists {
 			return false
 		}
 	}
 
-	p.Memory[to] = true
+	p.Memory[r.Result] = true
+	p.Derivation[r.Result] = r
 	return true
 }
 
-func (p *ProductionModel) Run() (bool, error) {
+func (p *ProductionModel) Run() {
 	for {
 		factAdded := false
 
 		for _, rule := range p.Repository.Rules {
-			if p.ProcessRule(rule.From, rule.Result) {
+			if p.ProcessRule(rule) {
 				factAdded = true
 			}
-		}
-		if _, ok := p.Memory[p.Target]; ok {
-			return true, nil
 		}
 		if !factAdded {
 			break
 		}
 	}
-	return false, nil
+}
+
+func (p *ProductionModel) GetAdvice() {
+	fmt.Println("==============================")
+
+	foundAny := false
+	for targetID := range p.Targets {
+		if _, known := p.Memory[targetID]; known {
+			foundAny = true
+			factDesc := p.Repository.Facts[targetID].Description
+			fmt.Println("Рекомендация:", factDesc)
+
+			if r, ok := p.Derivation[targetID]; ok {
+				fmt.Println("\tПричина:", r.Description)
+			}
+		}
+	}
+
+	if !foundAny {
+		fmt.Println("К сожалению, на основе введенных данных конкретных рекомендаций нет.")
+	}
+	fmt.Println("==============================")
 }
 
 func (p *ProductionModel) Print() {
 	fmt.Println("--- Final Memory State ---")
 	for id := range p.Memory {
 		if f, ok := p.Repository.Facts[id]; ok {
-			fmt.Printf("[%d] %s (Weight: %.1f)\n", f.Id, f.Description, f.Weight)
+			fmt.Printf("[%v] %s (%v)\n", f.Id, f.Description, f.Weight)
 		} else {
-			fmt.Printf("[%d] Unknown Fact\n", id)
+			fmt.Printf("[%v] Unknown Fact\n", id)
 		}
 	}
 	fmt.Println("--------------------------")
