@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("facts: ", len(repo.Facts))
+	fmt.Println("facts.txt: ", len(repo.Facts))
 	fmt.Println("rules: ", len(repo.Rules))
 
 	axioms, err := idpkg.ReadIds("data/axioms.txt")
@@ -32,6 +32,7 @@ func main() {
 
 	m := model.NewProductionModel(axioms, targets, repo)
 
-	m.Run()
+	//m.Run()
+	m.ReverseRun()
 	m.GetAdvice()
 }

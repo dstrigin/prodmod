@@ -5,6 +5,8 @@ import (
 	"prodmod/internal/fact"
 	"prodmod/internal/repository"
 	"prodmod/internal/rule"
+	"prodmod/internal/state"
+	"prodmod/pkg/stack"
 )
 
 type ProductionModel struct {
@@ -60,6 +62,72 @@ func (p *ProductionModel) Run() {
 		}
 		if !factAdded {
 			break
+		}
+	}
+}
+
+func (p *ProductionModel) ReverseRun() {
+	s := stack.New()
+	stateMap := make(map[fact.ID]state.State)
+	reverseRepo := repository.NewReverseRepository(p.Repository)
+
+	for target := range p.Targets {
+		if _, known := p.Memory[target]; !known {
+			s.Push(target)
+		}
+	}
+
+	for !s.Empty() {
+		curr := s.Peek()
+		if _, exists := p.Memory[curr]; exists {
+			s.Pop()
+			stateMap[curr] = state.Solved
+			continue
+		}
+
+		currentState, visited := stateMap[curr]
+
+		if !visited {
+			stateMap[curr] = state.Pending
+			rules := reverseRepo.Producers[curr]
+			if len(rules) == 0 {
+				s.Pop()
+				stateMap[curr] = state.Solved
+				continue
+			}
+			for _, r := range rules {
+				for _, factID := range r.From {
+					if _, exists := p.Memory[factID]; !exists {
+						if st, seen := stateMap[factID]; seen && st == state.Pending {
+							continue // say no to cycles
+						}
+						s.Push(factID)
+					}
+				}
+			}
+		} else if currentState == state.Pending {
+			rules := reverseRepo.Producers[curr]
+
+			for _, r := range rules {
+				ruleCond := true
+				for _, factID := range r.From {
+					if _, exists := p.Memory[factID]; !exists {
+						ruleCond = false
+						break
+					}
+				}
+
+				if ruleCond {
+					p.Memory[curr] = true
+					p.Derivation[curr] = r
+					break
+				}
+			}
+
+			s.Pop()
+			stateMap[curr] = state.Solved
+		} else {
+			s.Pop()
 		}
 	}
 }
